@@ -1,10 +1,16 @@
 import express from "express";
+import dotenv from "dotenv";
+
+dotenv.config();
 import cors from "cors";
 import path from "path";
 import fs from "fs";
-import { simpleGit } from "simple-git";
+import {simpleGit} from "simple-git";
+
 import { generate } from "./utils.js";
 import { fileURLToPath } from "url";
+import { getAllFiles } from "./file.js";
+import { uploadFile } from "./aws.js";
 
 const app = express();
 app.use(cors());
@@ -25,6 +31,14 @@ app.post("/deploy", async (req, res) => {
     }
 
     await simpleGit().clone(repoUrl, targetDir);
+    const files=getAllFiles(targetDir);
+    
+
+    // files.forEach(file=>{
+    //     S3.uploadFile(file,id);
+    // })
+
+    console.log(files);
 
     res.json({ message: "Repository cloned successfully", id });
 });
