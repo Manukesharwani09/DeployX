@@ -31,16 +31,29 @@ app.post("/deploy", async (req, res) => {
     }
 
     await simpleGit().clone(repoUrl, targetDir);
-    const files=getAllFiles(targetDir);
+    const files = getAllFiles(targetDir);
     
+    console.log(`📦 Found ${files.length} files to upload`);
+    
+    // Upload all files in parallel and wait for completion
+    await Promise.all(
+        files.map(async (file) => {
+            const relativePath = file.slice(targetDir.length + 1).replace(/\\/g, '/');
+            const s3Key = `${id}/${relativePath}`;
+            console.log(`⬆️  Uploading: ${s3Key}`);
+            try {
+                await uploadFile(s3Key, file);
+                console.log(`✅ Uploaded: ${s3Key}`);
+            } catch (error) {
+                console.error(`❌ Failed to upload ${s3Key}:`, error);
+                throw error;
+            }
+        })
+    );
+    
+    console.log(`🎉 All ${files.length} files uploaded successfully!`);
+    res.json({ message: "Repository cloned and files uploaded successfully", id });
 
-    // files.forEach(file=>{
-    //     S3.uploadFile(file,id);
-    // })
-
-    console.log(files);
-
-    res.json({ message: "Repository cloned successfully", id });
 });
 
 app.listen(3001, () => {
