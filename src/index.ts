@@ -15,6 +15,9 @@ import { createClient } from "redis";
 const publisher = createClient();
 publisher.connect();
 
+const subscriber = createClient();
+subscriber.connect();
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -57,11 +60,21 @@ app.post("/deploy", async (req, res) => {
     console.log(await publisher.get("health"));
 
     publisher.lPush("build-queue", id);
+    // insrt i n redis
+    publisher.hSet("status", id, "uploaded");
 
-    console.log(`🎉 All ${files.length} files uploaded successfully!`);
+    //console.log(`🎉 Al ${files.length} files uploaded successfully!`);
     res.json({ message: "Repository cloned and files uploaded successfully", id });
 
 });
+
+app.get("/status", async (req, res) => {
+    const id = req.query.id;
+    const status = await publisher.hGet("status", id as string);
+    res.json({
+        status: status
+    });
+})
 
 app.listen(3001, () => {
     console.log("Server is running on port 3001");
